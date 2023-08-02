@@ -1,0 +1,48 @@
+version: 2.1
+
+orbs:
+  python: circleci/python@2.1.1
+
+jobs:
+  build:
+    working_directory: /tmp/workspace
+    executor: python/default
+    steps:
+      - checkout
+      - python/install-packages:
+          pip-dependency-file: requirements.txt # This should be the default
+          pkg-manager: pip
+      - run:
+          name: Setup VEVN
+          command: |
+            ls -la
+            python -m venv venv
+            ./venv/bin/pip install -r requirements.txt
+      - persist_to_workspace:
+          root: /tmp
+          paths:
+            - workspace
+
+  unit-test:
+    working_directory: /tmp
+    executor: python/default
+    steps:
+      - attach_workspace:
+          at: /tmp
+      - run:
+          command: |
+            cd workspace
+            ./venv/bin/coverage run -m pytest --ignore=venv
+      - run:
+          command: |
+            cd workspace
+            ./venv/bin/coverage report
+
+workflows:
+  main:
+    jobs:
+      - build
+      - unit-test:
+          requires:
+            - build
+    
